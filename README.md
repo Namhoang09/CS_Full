@@ -1,7 +1,7 @@
 ## Final Design for CS_project
 
-# Folder: Python
+# Python
 Dùng để test toàn bộ hệ thống xem giá trị Nd dự đoán.
 
-# Folder: SystemVerilog
+# SystemVerilog
 Dùng để implement lên FPGA chạy thời gian thực.
