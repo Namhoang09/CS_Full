@@ -61,7 +61,12 @@ coef = np.zeros(Ne, dtype=np.int64)
 for it in range(K_MP):
     corr     = Theta.T @ r                           # [NE]
     best_col = int(np.argmax(np.abs(corr)))
-    alpha = (corr[best_col] >> NORM_SHIFT).astype(np.int32)
+
+    if best_col == 0:
+        alpha = (corr[best_col] >> NORM_SHIFT_DC).astype(np.int32)
+    else:
+        alpha = (corr[best_col] >> NORM_SHIFT).astype(np.int32)
+        
     coef[best_col] = np.int32(coef[best_col] + alpha)
     r -= Theta[:, best_col] * np.int64(alpha)
 

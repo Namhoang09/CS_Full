@@ -9,7 +9,7 @@ Fs = 2e9                                    # Tần số lấy mẫu của tín 
 delta_T = 1 / Fs                            # Chu kỳ lấy mẫu (0.5 ns)
 
 Ne = round(1 / ((Fc2 - Fc1) * delta_T))     # Số mẫu trong thời gian phơi sáng (200 mẫu)
-lambda_e = c / (Fc2 - Fc1)                  # Khoảng cách đo tối đa (3 m)
+lambda_e = c / (Fc2 - Fc1)                  # Khoảng cách đo tối đa (30 m)
 delta_L  = c * delta_T                      # Độ phân giải khoảng cách (0.15 m)
 
 Fr = 1e4                                    # Tần số lặp lại của PD = 10 kHz
