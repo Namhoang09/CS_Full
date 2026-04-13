@@ -47,7 +47,7 @@ module mp_core
     sync_bram #(
         .DATA_W    (PO_W),
         .DEPTH     (PO_DEPTH),
-        .INIT_FILE ("Data/po_vector.txt")
+        .INIT_FILE ("D:/CS_Full/Data/po_vector.txt")
     ) u_po (
         .clk  (clk),
         .we   (1'b0),

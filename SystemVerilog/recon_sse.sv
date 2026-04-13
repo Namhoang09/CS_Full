@@ -21,7 +21,7 @@ module recon_sse
     sync_bram #(
         .DATA_W    (S_W),
         .DEPTH     (S_DEPTH),
-        .INIT_FILE ("Data/S_original.txt")
+        .INIT_FILE ("D:/CS_Full/Data/S_original.txt")
     ) u_s_rom (
         .clk  (clk),
         .we   (1'b0),

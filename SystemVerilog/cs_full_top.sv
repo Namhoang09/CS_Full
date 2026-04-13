@@ -49,7 +49,7 @@ module cs_full_top
     sync_bram #(
         .DATA_W    (Psi_W),
         .DEPTH     (Psi_DEPTH),
-        .INIT_FILE ("Data/Psi_matrix.txt")
+        .INIT_FILE ("D:/CS_Full/Data/Psi_matrix.txt")
     ) u_Psi_rom (
         .clk  (clk),
         .we   (1'b0),
