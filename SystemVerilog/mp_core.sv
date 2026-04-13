@@ -6,12 +6,12 @@ module mp_core
     input  logic start,      
     output logic done,     
 
-    // Streaming từ Theta_Engine
-    input  logic                      theta_valid,
-    input  logic signed [THETA_W-1:0] theta_data,
-    input  logic [$clog2(M)-1:0]      theta_row,
-    input  logic [$clog2(NE)-1:0]     theta_col_out,
-    input  logic                      theta_last,
+    // Streaming từ A_Engine
+    input  logic                      A_valid,
+    input  logic signed [A_W-1:0]     A_data,
+    input  logic [$clog2(M)-1:0]      A_row,
+    input  logic [$clog2(NE)-1:0]     A_col_out,
+    input  logic                      A_last,
 
     // Interface với Top FSM
     output logic [1:0]            mp_phase,     
@@ -47,7 +47,7 @@ module mp_core
     sync_bram #(
         .DATA_W    (PO_W),
         .DEPTH     (PO_DEPTH),
-        .INIT_FILE ("D:/CS_Full/Data/po_vector.txt")
+        .INIT_FILE ("Data/po_vector.txt")
     ) u_po (
         .clk  (clk),
         .we   (1'b0),
@@ -92,10 +92,10 @@ module mp_core
 
     // ── Pipeline Stage 1: CALC_INNER ──────────────────────────────
     logic signed [ACC_W-1:0]  p1_mul;          // kết quả nhân
-    logic                     p1_valid;        // theta_valid delay 1
-    logic                     p1_row_zero;     // theta_row==0 delay 1
-    logic                     p1_last;         // theta_last delay 1
-    logic [$clog2(NE)-1:0]   p1_col;           // theta_col_out delay 1
+    logic                     p1_valid;        // A_valid delay 1
+    logic                     p1_row_zero;     // A_row==0 delay 1
+    logic                     p1_last;         // A_last delay 1
+    logic [$clog2(NE)-1:0]    p1_col;          // A_col_out delay 1
 
     always_ff @(posedge clk or posedge rst) begin
         if (rst) begin
@@ -106,11 +106,11 @@ module mp_core
             p1_col      <= '0;
         end else begin
             // Latch inputs vào stage 1
-            p1_mul      <= ACC_W'(signed'(theta_data)) * r[theta_row];
-            p1_valid    <= theta_valid;
-            p1_row_zero <= (theta_row == 0);
-            p1_last     <= theta_last;
-            p1_col      <= theta_col_out;
+            p1_mul      <= ACC_W'(signed'(A_data)) * r[A_row];
+            p1_valid    <= A_valid;
+            p1_row_zero <= (A_row == 0);
+            p1_last     <= A_last;
+            p1_col      <= A_col_out;
         end
     end
 
@@ -127,10 +127,10 @@ module mp_core
             p2_row   <= '0;
             p2_last  <= 0;
         end else begin
-            p2_mul   <= ACC_W'(signed'(alpha)) * ACC_W'(signed'(theta_data));
-            p2_valid <= theta_valid;
-            p2_row   <= theta_row;
-            p2_last  <= theta_last;
+            p2_mul   <= ACC_W'(signed'(alpha)) * ACC_W'(signed'(A_data));
+            p2_valid <= A_valid;
+            p2_row   <= A_row;
+            p2_last  <= A_last;
         end
     end
 
@@ -184,9 +184,9 @@ module mp_core
             end
 
             // ── S_CALC_INNER ──────────────────────────────────────
-            // Tích lũy corr[col] = Σ_m Theta[m,col] * r[m]
-            // theta_row==0: reset inner_acc (bắt đầu cột mới)
-            // theta_last:   lưu inner_result[col] (dùng inner_acc OLD + tích cuối)
+            // Tích lũy corr[col] = Σ_m A[m,col] * r[m]
+            // A_row==0: reset inner_acc (bắt đầu cột mới)
+            // A_last:   lưu inner_result[col] (dùng inner_acc OLD + tích cuối)
             S_CALC_INNER: begin
                 if (p1_valid) begin
                     if (p1_row_zero)
@@ -246,7 +246,7 @@ module mp_core
 
             // ── S_UPD_R ───────────────────────────────────────────
             // Nhận replay stream của best_col
-            // r[m] -= alpha * Theta[m, best_col]
+            // r[m] -= alpha * A[m, best_col]
             S_UPD_R: begin
                 if (p2_valid)
                     r[p2_row] <= r[p2_row] - p2_mul;

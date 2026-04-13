@@ -5,10 +5,10 @@ module top_fsm
     input  logic rst,
     input  logic start,
 
-    // Theta_Engine control
+    // A_Engine control
     output logic                  gwin_fill_en,
     input  logic                  gwin_done,
-    input  logic                  theta_busy,
+    input  logic                  A_busy,
     output logic [$clog2(NE)-1:0] Nd_hyp,
     output logic                  compute_start,
     output logic [$clog2(NE)-1:0] col_req,
@@ -40,7 +40,7 @@ module top_fsm
         S_GWIN_FILL,
         S_MP_INIT,
         S_SEND_COLS,
-        S_WAIT_THETA_BUSY,  // Thêm state này
+        S_WAIT_A_BUSY,  // Thêm state này
         S_WAIT_UPD,
         S_SEND_REPLAY,
         S_WAIT_REPLAY_BUSY, // Thêm state này
@@ -64,11 +64,11 @@ module top_fsm
     always_ff @(posedge clk or posedge rst) begin
         if (rst) begin
             state         <= S_IDLE;
-            gwin_fill_en  <= 0;
-            compute_start <= 0;
-            mp_start      <= 0;
-            recon_start   <= 0;
-            best_Nd_valid <= 0;
+            gwin_fill_en  <=  0;
+            compute_start <=  0;
+            mp_start      <=  0;
+            recon_start   <=  0;
+            best_Nd_valid <=  0;
             nd_cnt        <= '0;
             col_cnt       <= '0;
             col_req       <= '0;
@@ -115,17 +115,17 @@ module top_fsm
 
             // ── S_SEND_COLS ───────────────────────────────────────
             S_SEND_COLS: begin
-                if (!theta_busy) begin
+                if (!A_busy) begin
                     col_req       <= col_cnt;
                     compute_start <= 1;
-                    state         <= S_WAIT_THETA_BUSY; // Chuyển sang chờ
+                    state         <= S_WAIT_A_BUSY; // Chuyển sang chờ
                 end
             end
 
-            // ── S_WAIT_THETA_BUSY ─────────────────────────────────
-            S_WAIT_THETA_BUSY: begin
-                // Đợi theta_engine phản hồi bận rồi mới quyết định tiếp
-                if (theta_busy) begin
+            // ── S_WAIT_A_BUSY ─────────────────────────────────
+            S_WAIT_A_BUSY: begin
+                // Đợi A_engine phản hồi bận rồi mới quyết định tiếp
+                if (A_busy) begin
                     if (col_cnt == NE - 1) begin
                         state <= S_WAIT_UPD;
                     end else begin
@@ -146,7 +146,7 @@ module top_fsm
 
             // ── S_SEND_REPLAY ─────────────────────────────────────
             S_SEND_REPLAY: begin
-                if (!theta_busy) begin
+                if (!A_busy) begin
                     col_req       <= best_col_lat;
                     compute_start <= 1;
                     state         <= S_WAIT_REPLAY_BUSY; // Chuyển sang chờ
@@ -155,13 +155,13 @@ module top_fsm
 
             // ── S_WAIT_REPLAY_BUSY ────────────────────────────────
             S_WAIT_REPLAY_BUSY: begin
-                if (theta_busy) begin
+                if (A_busy) begin
                     state <= S_ITER_OR_DONE;
                 end
             end
 
             // ── S_ITER_OR_DONE ────────────────────────────────────
-            // Chờ theta_last (replay xong) rồi kiểm tra mp_done:
+            // Chờ A_last (replay xong) rồi kiểm tra mp_done:
             //   mp_done=1 → K iterations xong → sang RECON
             //   mp_done=0 → còn iteration → gửi NE cột tiếp theo
             // Dùng mp_phase để detect: sau UPD_R → ITER_CHK → CALC hoặc DONE
@@ -185,7 +185,6 @@ module top_fsm
             S_WAIT_RECON: begin
                 if (recon_done) begin
                     state <= S_UPDATE_MIN;
-                    // Lệnh in đặt trực tiếp ở đây sẽ không bao giờ bị lỗi
                     $display("[%0t] Tien do: %0d / %0d (%.1f%%) - Hoan thanh kiem tra Nd_hyp = %0d", 
                              $time, 
                              nd_cnt + 1, 

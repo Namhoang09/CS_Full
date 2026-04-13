@@ -1,4 +1,4 @@
-module theta_engine
+module A_engine
     import mylib::*;
 (
     input  logic clk,
@@ -16,16 +16,16 @@ module theta_engine
     input  logic                  compute_start,
     input  logic [$clog2(NE)-1:0] col_req,
 
-    // D ROM (external, column-major: addr = col*NE + n)
-    output logic [$clog2(D_DEPTH)-1:0] d_addr,
-    input  logic signed [D_W-1:0]      d_dout,
+    // Psi ROM (external, column-major: addr = col*NE + n)
+    output logic [$clog2(Psi_DEPTH)-1:0] Psi_addr,
+    input  logic signed [Psi_W-1:0]      Psi_dout,
 
     // Streaming output → MP_Core
-    output logic                      theta_valid,
-    output logic signed [THETA_W-1:0] theta_data,
-    output logic [$clog2(M)-1:0]      theta_row,
-    output logic [$clog2(NE)-1:0]     theta_col_out,
-    output logic                      theta_last
+    output logic                      A_valid,
+    output logic signed [A_W-1:0]     A_data,
+    output logic [$clog2(M)-1:0]      A_row,
+    output logic [$clog2(NE)-1:0]     A_col_out,
+    output logic                      A_last
 );
 
     // G-Win Buffer [M][GWIN_W] ≈ 1 KB
@@ -55,9 +55,9 @@ module theta_engine
     assign lfsr_en = (state == S_CAP) || (state == S_SKIP);
     assign busy    = (state == S_ACCUM) || (state == S_STREAM);
 
-    // D ROM address (column-major)
-    assign d_addr = ($clog2(D_DEPTH))'(col_lat) * ($clog2(D_DEPTH))'(NE)
-                  + ($clog2(D_DEPTH))'(n_cnt);
+    // Psi ROM address (column-major)
+    assign Psi_addr = ($clog2(Psi_DEPTH))'(col_lat) * ($clog2(Psi_DEPTH))'(NE)
+                  + ($clog2(Psi_DEPTH))'(n_cnt);
 
     // G-Win index
     logic [$clog2(GWIN_W)-1:0] g_idx;
@@ -65,25 +65,25 @@ module theta_engine
 
     always_ff @(posedge clk or posedge rst) begin
         if (rst) begin
-            state         <= S_IDLE;
-            gwin_done     <= 0;
-            m_fill        <= '0;
-            cap_cnt       <= '0;
-            skip_cnt      <= '0;
-            n_cnt         <= '0;
-            n_cnt_d1      <= '0;
-            m_stream      <= '0;
-            col_lat       <= '0;
-            theta_valid   <= 0;
-            theta_last    <= 0;
-            theta_data    <= '0;
-            theta_row     <= '0;
-            theta_col_out <= '0;
+            state     <= S_IDLE;
+            gwin_done <=  0;
+            m_fill    <= '0;
+            cap_cnt   <= '0;
+            skip_cnt  <= '0;
+            n_cnt     <= '0;
+            n_cnt_d1  <= '0;
+            m_stream  <= '0;
+            col_lat   <= '0;
+            A_valid   <=  0;
+            A_last    <=  0;
+            A_data    <= '0;
+            A_row     <= '0;
+            A_col_out <= '0;
             for (int i = 0; i < M;  i++) g_win[i] <= '0;
             for (int i = 0; i < M;  i++) acc[i]   <= '0;
         end else begin
-            theta_valid <= 0;
-            theta_last  <= 0;
+            A_valid <= 0;
+            A_last  <= 0;
             n_cnt_d1    <= n_cnt;
 
             case (state)
@@ -130,7 +130,7 @@ module theta_engine
                 if (n_cnt >= 1) begin
                     for (int m = 0; m < M; m++) begin
                         if (g_win[m][g_idx])
-                            acc[m] <= acc[m] + TACC_W'(signed'(d_dout));
+                            acc[m] <= acc[m] + TACC_W'(signed'(Psi_dout));
                     end
                 end
                 if (n_cnt == NE) begin
@@ -141,12 +141,12 @@ module theta_engine
             end
 
             S_STREAM: begin
-                theta_valid   <= 1;
-                theta_data    <= THETA_W'(signed'(acc[m_stream]));
-                theta_row     <= m_stream;
-                theta_col_out <= col_lat;
+                A_valid   <= 1;
+                A_data    <= A_W'(signed'(acc[m_stream]));
+                A_row     <= m_stream;
+                A_col_out <= col_lat;
                 if (m_stream == M - 1) begin
-                    theta_last <= 1;
+                    A_last <= 1;
                     state      <= S_IDLE;
                 end else
                     m_stream <= m_stream + 1;

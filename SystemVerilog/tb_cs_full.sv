@@ -9,11 +9,11 @@ module tb_cs_full;
 
     // ── DUT ───────────────────────────────────────────────────────
     cs_full_top u_dut (
-        .clk          (clk),
-        .rst          (rst),
-        .start        (start),
-        .best_Nd      (best_Nd),
-        .best_Nd_valid(best_Nd_valid)
+        .clk           (clk),
+        .rst           (rst),
+        .start         (start),
+        .best_Nd       (best_Nd),
+        .best_Nd_valid (best_Nd_valid)
     );
 
     // ── Clock 100 MHz ─────────────────────────────────────────────
@@ -39,8 +39,8 @@ module tb_cs_full;
 
         $display("==============================");
         $display("  best_Nd = %0d", best_Nd); 
-        $display("  (Nd thuc te = 50)");
-        if (best_Nd == 50)
+        $display("  (Nd thuc te = 100)");
+        if (best_Nd == 100)
             $display("  >> CHINH XAC!");
         else 
             $display("  >> SAI, can debug!");

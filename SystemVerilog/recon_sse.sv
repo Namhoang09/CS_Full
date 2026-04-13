@@ -6,9 +6,9 @@ module recon_sse
     input  logic start,                               // pulse từ Top FSM
     input  var logic signed [COEF_W-1:0] coef [0:NE-1], // từ MP_Core
 
-    // D ROM shared (column-major: addr = col*NE + n)
-    output logic [$clog2(D_DEPTH)-1:0] d_addr,
-    input  logic signed [D_W-1:0]      d_dout,
+    // Psi ROM shared (column-major: addr = col*NE + n)
+    output logic [$clog2(Psi_DEPTH)-1:0] Psi_addr,
+    input  logic signed [Psi_W-1:0]      Psi_dout,
 
     output logic        done,  // pulse 1 cycle khi xong
     output logic [63:0] sse    // giữ đến lần start tiếp theo
@@ -21,7 +21,7 @@ module recon_sse
     sync_bram #(
         .DATA_W    (S_W),
         .DEPTH     (S_DEPTH),
-        .INIT_FILE ("D:/CS_Full/Data/s_vector.txt")
+        .INIT_FILE ("Data/S_original.txt")
     ) u_s_rom (
         .clk  (clk),
         .we   (1'b0),
@@ -51,8 +51,8 @@ module recon_sse
     logic signed [SACC_W-1:0] diff;
 
     // ── Combinatorial ─────────────────────────────────────────────
-    assign d_addr = ($clog2(D_DEPTH))'(col_j) * ($clog2(D_DEPTH))'(NE)
-                  + ($clog2(D_DEPTH))'(n_cnt);
+    assign Psi_addr = ($clog2(Psi_DEPTH))'(col_j) * ($clog2(Psi_DEPTH))'(NE)
+                  + ($clog2(Psi_DEPTH))'(n_cnt);
 
     assign s_addr = sse_cnt[$clog2(S_DEPTH)-1:0];
 
@@ -72,7 +72,7 @@ module recon_sse
             p3_valid <= 0;
             p3_idx   <= '0;
         end else begin
-            p3_mul   <= SACC_W'(signed'(d_dout)) * SACC_W'(signed'(coef[col_j]));
+            p3_mul   <= SACC_W'(signed'(Psi_dout)) * SACC_W'(signed'(coef[col_j]));
             p3_valid <= (n_cnt >= 1);
             p3_idx   <= n_cnt_d1[$clog2(NE)-1:0];
         end

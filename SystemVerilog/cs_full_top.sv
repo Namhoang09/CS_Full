@@ -11,26 +11,26 @@ module cs_full_top
 
     // ── Khai báo tất cả signals ───────────────────────────────────
 
-    // D ROM shared
-    logic [$clog2(D_DEPTH)-1:0] theta_d_addr;
-    logic [$clog2(D_DEPTH)-1:0] recon_d_addr;
-    logic [$clog2(D_DEPTH)-1:0] d_addr_mux;
-    logic signed [D_W-1:0]      d_dout;
+    // Psi ROM shared
+    logic [$clog2(Psi_DEPTH)-1:0] A_Psi_addr;
+    logic [$clog2(Psi_DEPTH)-1:0] recon_Psi_addr;
+    logic [$clog2(Psi_DEPTH)-1:0] Psi_addr_mux;
+    logic signed [Psi_W-1:0]      Psi_dout;
 
     // LFSR
     logic g_bit, lfsr_en;
 
-    // Theta_Engine
+    // A_Engine
     logic                      gwin_fill_en, gwin_done;
-    logic                      theta_busy;
+    logic                      A_busy;
     logic [$clog2(NE)-1:0]     Nd_hyp;
     logic                      compute_start;
     logic [$clog2(NE)-1:0]     col_req;
-    logic                      theta_valid;
-    logic signed [THETA_W-1:0] theta_data;
-    logic [$clog2(M)-1:0]      theta_row;
-    logic [$clog2(NE)-1:0]     theta_col_out;
-    logic                      theta_last;
+    logic                      A_valid;
+    logic signed [A_W-1:0]     A_data;
+    logic [$clog2(M)-1:0]      A_row;
+    logic [$clog2(NE)-1:0]     A_col_out;
+    logic                      A_last;
 
     // MP_Core
     logic                     mp_start, mp_done;
@@ -42,20 +42,20 @@ module cs_full_top
     logic        recon_start, recon_done;
     logic [63:0] sse;
 
-    // ── D ROM mux (khai báo xong rồi mới assign) ──────────────────
-    assign d_addr_mux = theta_busy ? theta_d_addr : recon_d_addr;
+    // ── Psi ROM mux (khai báo xong rồi mới assign) ──────────────────
+    assign Psi_addr_mux = A_busy ? A_Psi_addr : recon_Psi_addr;
 
     // ── Instances ─────────────────────────────────────────────────
     sync_bram #(
-        .DATA_W    (D_W),
-        .DEPTH     (D_DEPTH),
-        .INIT_FILE ("D:/CS_Full/Data/d_matrix.txt")
-    ) u_d_rom (
+        .DATA_W    (Psi_W),
+        .DEPTH     (Psi_DEPTH),
+        .INIT_FILE ("Data/Psi_matrix.txt")
+    ) u_Psi_rom (
         .clk  (clk),
         .we   (1'b0),
-        .addr (d_addr_mux),
+        .addr (Psi_addr_mux),
         .din  ('0),
-        .dout (d_dout)
+        .dout (Psi_dout)
     );
 
     lfsr_32 u_lfsr (
@@ -65,24 +65,24 @@ module cs_full_top
         .g_bit (g_bit)
     );
 
-    theta_engine u_theta (
+    A_engine u_A (
         .clk           (clk),
         .rst           (rst),
         .g_bit         (g_bit),
         .gwin_fill_en  (gwin_fill_en),
         .gwin_done     (gwin_done),
         .lfsr_en       (lfsr_en),
-        .busy          (theta_busy),
+        .busy          (A_busy),
         .Nd_hyp        (Nd_hyp),
         .compute_start (compute_start),
         .col_req       (col_req),
-        .d_addr        (theta_d_addr),
-        .d_dout        (d_dout),
-        .theta_valid   (theta_valid),
-        .theta_data    (theta_data),
-        .theta_row     (theta_row),
-        .theta_col_out (theta_col_out),
-        .theta_last    (theta_last)
+        .Psi_addr      (A_Psi_addr),
+        .Psi_dout      (Psi_dout),
+        .A_valid       (A_valid),
+        .A_data        (A_data),
+        .A_row         (A_row),
+        .A_col_out     (A_col_out),
+        .A_last        (A_last)
     );
 
     mp_core u_mp (
@@ -90,25 +90,25 @@ module cs_full_top
         .rst           (rst),
         .start         (mp_start),
         .done          (mp_done),
-        .theta_valid   (theta_valid),
-        .theta_data    (theta_data),
-        .theta_row     (theta_row),
-        .theta_col_out (theta_col_out),
-        .theta_last    (theta_last),
+        .A_valid       (A_valid),
+        .A_data        (A_data),
+        .A_row         (A_row),
+        .A_col_out     (A_col_out),
+        .A_last        (A_last),
         .mp_phase      (mp_phase),
         .best_col_out  (best_col_out),
         .coef          (coef)
     );
 
     recon_sse u_recon (
-        .clk    (clk),
-        .rst    (rst),
-        .start  (recon_start),
-        .coef   (coef),
-        .d_addr (recon_d_addr),
-        .d_dout (d_dout),
-        .done   (recon_done),
-        .sse    (sse)
+        .clk      (clk),
+        .rst      (rst),
+        .start    (recon_start),
+        .coef     (coef),
+        .Psi_addr (recon_Psi_addr),
+        .Psi_dout (Psi_dout),
+        .done     (recon_done),
+        .sse      (sse)
     );
 
     top_fsm u_top_fsm (
@@ -117,7 +117,7 @@ module cs_full_top
         .start         (start),
         .gwin_fill_en  (gwin_fill_en),
         .gwin_done     (gwin_done),
-        .theta_busy    (theta_busy),
+        .A_busy        (A_busy),
         .Nd_hyp        (Nd_hyp),
         .compute_start (compute_start),
         .col_req       (col_req),

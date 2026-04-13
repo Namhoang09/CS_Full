@@ -18,14 +18,14 @@ Nc = round(1 / (Fr * delta_T))              # Số mẫu của sóng mang trong 
 # Thông số thuật toán, có thể điều chỉnh
 Ap = 30                                     # Biên độ tín hiệu
 
-Nd = 50                                    # Độ trễ thực tế Nd (số mẫu)
+Nd = 100                                    # Độ trễ thực tế Nd (số mẫu)
 actual_dist = Nd * c * delta_T              # Khoảng cách thực tế (m)
 
 M = 20                                      # Số lượng mẫu PD thu được (số phương trình nén)
 
 SNR_DB = None                               # Tín hiệu nhiễu (dB)
 
-FRAC_D  = 14
+FRAC_Psi  = 14
 FRAC_S  = 15
 K_MP    = 10
 

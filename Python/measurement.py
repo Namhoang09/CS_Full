@@ -32,24 +32,24 @@ def generate():
     g = generate_lfsr(total_length)
 
     # Tạo ma trận A đúng theo paper
-    A = np.zeros((M, Ne))
+    Phi = np.zeros((M, Ne))
     
     for m in range(M):
         start = Nd + m*Nc
-        A[m,:] = g[start : start + Ne]
+        Phi[m,:] = g[start : start + Ne]
 
     # Tín hiệu nén quan sát được tại PD
-    Po = A @ S
+    Po = Phi @ S
 
-    return t, S, A, Po, g
+    return t, S, Phi, Po, g
 
 def get_fourier_dict(N):
-    D = np.zeros((N, N))
-    D[:, 0] = 1.0 / np.sqrt(N) # Thành phần DC
+    Psi = np.zeros((N, N))
+    Psi[:, 0] = 1.0 / np.sqrt(N) # Thành phần DC
     
     for k in range(1, N // 2):
-        D[:, 2*k - 1] = np.sqrt(2/N) * np.cos(2 * np.pi * k * np.arange(N) / N)
-        D[:, 2*k]     = np.sqrt(2/N) * np.sin(2 * np.pi * k * np.arange(N) / N)
+        Psi[:, 2*k - 1] = np.sqrt(2/N) * np.cos(2 * np.pi * k * np.arange(N) / N)
+        Psi[:, 2*k]     = np.sqrt(2/N) * np.sin(2 * np.pi * k * np.arange(N) / N)
         
-    D[:, -1] = 1.0 / np.sqrt(N) * np.cos(np.pi * np.arange(N))
-    return D
+    Psi[:, -1] = 1.0 / np.sqrt(N) * np.cos(np.pi * np.arange(N))
+    return Psi
