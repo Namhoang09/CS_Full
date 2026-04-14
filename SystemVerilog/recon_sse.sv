@@ -61,48 +61,6 @@ module recon_sse
                     - srec_acc[sse_cnt_d1[$clog2(NE)-1:0]];
     assign diff     = diff_raw >>> SSE_SHIFT;
 
-    // ── Pipeline Stage 1: RECON ───────────────────────────────────
-    logic signed [SACC_W-1:0]        p3_mul;
-    logic                            p3_valid;
-    logic [$clog2(NE)-1:0]           p3_idx;    
-
-    always_ff @(posedge clk or posedge rst) begin
-        if (rst) begin
-            p3_mul   <= '0;
-            p3_valid <= 0;
-            p3_idx   <= '0;
-        end else begin
-            p3_mul   <= SACC_W'(signed'(Psi_dout)) * SACC_W'(signed'(coef[col_j]));
-            p3_valid <= (n_cnt >= 1);
-            p3_idx   <= n_cnt_d1[$clog2(NE)-1:0];
-        end
-    end
-
-    // ── Pipeline Stage 1: SSE ─────────────────────────────────────
-    logic signed [SACC_W-1:0] p4_diff;
-    logic                     p4_valid;
-
-    // ── Pipeline Stage 2: SSE ─────────────────────────────────────
-    logic [63:0]              p4_sq;    // diff^2
-    logic                     p4_valid2;
-
-    always_ff @(posedge clk or posedge rst) begin
-        if (rst) begin
-            p4_diff   <= '0;
-            p4_valid  <= 0;
-            p4_sq     <= '0;
-            p4_valid2 <= 0;
-        end else begin
-            // Stage 1: latch diff
-            p4_diff   <= diff;
-            p4_valid  <= (sse_cnt >= 1);
-
-            // Stage 2: tính bình phương
-            p4_sq     <= 64'(p4_diff * p4_diff);
-            p4_valid2 <= p4_valid;
-        end
-    end
-
     // ── Sequential ────────────────────────────────────────────────
     always_ff @(posedge clk or posedge rst) begin
         if (rst) begin
@@ -140,8 +98,8 @@ module recon_sse
             S_RECON: begin
                 n_cnt <= n_cnt + 1;
 
-                if (p3_valid)
-                    srec_acc[p3_idx] <= srec_acc[p3_idx] + p3_mul;
+                if (n_cnt >= 1)
+                    srec_acc[n_cnt_d1[$clog2(NE)-1:0]] <= srec_acc[n_cnt_d1[$clog2(NE)-1:0]] + SACC_W'(signed'(Psi_dout)) * SACC_W'(signed'(coef[col_j]));
 
                 if (n_cnt == NE) begin
                     n_cnt <= '0;
@@ -160,10 +118,10 @@ module recon_sse
             S_SSE: begin
                 sse_cnt <= sse_cnt + 1;
 
-                if (p4_valid2)
-                    sse <= sse + p4_sq;
+                if (sse_cnt >= 1)
+                    sse <= sse + 64'(diff * diff);
 
-                if (sse_cnt == NE + 2)
+                if (sse_cnt == NE)
                     state <= S_DONE;
             end
 

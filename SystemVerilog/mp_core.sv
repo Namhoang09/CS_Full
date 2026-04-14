@@ -90,50 +90,6 @@ module mp_core
     assign best_col_out = best_col;
     assign done         = (state == S_DONE);
 
-    // ── Pipeline Stage 1: CALC_INNER ──────────────────────────────
-    logic signed [ACC_W-1:0]  p1_mul;          // kết quả nhân
-    logic                     p1_valid;        // A_valid delay 1
-    logic                     p1_row_zero;     // A_row==0 delay 1
-    logic                     p1_last;         // A_last delay 1
-    logic [$clog2(NE)-1:0]    p1_col;          // A_col_out delay 1
-
-    always_ff @(posedge clk or posedge rst) begin
-        if (rst) begin
-            p1_mul      <= '0;
-            p1_valid    <= 0;
-            p1_row_zero <= 0;
-            p1_last     <= 0;
-            p1_col      <= '0;
-        end else begin
-            // Latch inputs vào stage 1
-            p1_mul      <= ACC_W'(signed'(A_data)) * r[A_row];
-            p1_valid    <= A_valid;
-            p1_row_zero <= (A_row == 0);
-            p1_last     <= A_last;
-            p1_col      <= A_col_out;
-        end
-    end
-
-    // ── Pipeline Stage 1: UPD_R ───────────────────────────────────
-    logic signed [ACC_W-1:0] p2_mul;
-    logic                    p2_valid;
-    logic [$clog2(M)-1:0]    p2_row;
-    logic                    p2_last;
-
-    always_ff @(posedge clk or posedge rst) begin
-        if (rst) begin
-            p2_mul   <= '0;
-            p2_valid <= 0;
-            p2_row   <= '0;
-            p2_last  <= 0;
-        end else begin
-            p2_mul   <= ACC_W'(signed'(alpha)) * ACC_W'(signed'(A_data));
-            p2_valid <= A_valid;
-            p2_row   <= A_row;
-            p2_last  <= A_last;
-        end
-    end
-
     // ── Sequential logic ───────────────────────────────────────────
     always_ff @(posedge clk or posedge rst) begin
         if (rst) begin
@@ -188,16 +144,16 @@ module mp_core
             // A_row==0: reset inner_acc (bắt đầu cột mới)
             // A_last:   lưu inner_result[col] (dùng inner_acc OLD + tích cuối)
             S_CALC_INNER: begin
-                if (p1_valid) begin
-                    if (p1_row_zero)
-                        inner_acc <= p1_mul; 
+                if (A_valid) begin
+                    if ((A_row == 0))
+                        inner_acc <= ACC_W'(signed'(A_data)) * r[A_row]; 
                     else
-                        inner_acc <= inner_acc + p1_mul;
+                        inner_acc <= inner_acc + ACC_W'(signed'(A_data)) * r[A_row];
 
-                    if (p1_last) begin
+                    if (A_last) begin
                         // inner_acc là tổng của row 0..M-2 (OLD, non-blocking)
                         // cộng thêm row M-1 để có tổng đầy đủ
-                        inner_result[p1_col] <= inner_acc + p1_mul;
+                        inner_result[A_col_out] <= inner_acc + ACC_W'(signed'(A_data)) * r[A_row];
                         col_count <= col_count + 1;
 
                         if (col_count == NE - 1) begin
@@ -248,10 +204,10 @@ module mp_core
             // Nhận replay stream của best_col
             // r[m] -= alpha * A[m, best_col]
             S_UPD_R: begin
-                if (p2_valid)
-                    r[p2_row] <= r[p2_row] - p2_mul;
+                if (A_valid)
+                    r[A_row] <= r[A_row] - ACC_W'(signed'(alpha)) * ACC_W'(signed'(A_data));
 
-                if (p2_last)
+                if (A_last)
                     state <= S_ITER_CHK;
             end
 
